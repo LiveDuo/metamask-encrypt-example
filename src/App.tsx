@@ -36,7 +36,7 @@ export default function App() {
   const { connect, metaState } = useMetamask();
   const [publicKey, setPublicKey] = useState("");
 
-  const web3 = metaState.web3 as providers.Web3Provider;
+  const web3 = metaState.web3;
   const account = metaState.account[0];
 
   return (
