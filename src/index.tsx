@@ -1,6 +1,5 @@
 
-import { render } from 'react-dom'
-// import { ChakraProvider } from '@chakra-ui/react'
+import { createRoot } from 'react-dom/client'
 import { MetamaskStateProvider } from 'use-metamask'
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary'
 
@@ -16,15 +15,14 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
   )
 }
 
-const rootElement = document.getElementById('root')
-
-render(
-  // <ChakraProvider>
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <MetamaskStateProvider>
-        <App />
-      </MetamaskStateProvider>
-    </ErrorBoundary>,
-  // </ChakraProvider>
-  rootElement
+const Index = () => (
+  <ErrorBoundary FallbackComponent={ErrorFallback}>
+    <MetamaskStateProvider>
+      <App />
+    </MetamaskStateProvider>
+  </ErrorBoundary>
 )
+
+const container = document.getElementById('root')
+const root = createRoot(container as HTMLElement)
+root.render(<Index/>)
