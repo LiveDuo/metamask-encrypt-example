@@ -51,13 +51,10 @@ const App = () => {
   return (
     <div style={{fontFamily: 'sans-serif', textAlign: 'center'}}>
       <h2>Encryption/Decryption with Metamask</h2>
-      <p style={{ fontSize: 11, fontStyle: 'italic' }}>
-        Metamask is only used to "access" the private key, nothing happens on-chain.
-      </p>
       {!metaState.isConnected || !web3 || !account ? (
         <button onClick={() => connect(providers.Web3Provider)}>Connect</button>
       ) : (
-        <>
+        <div>
           <p>Connected account: {account} </p>
           <hr />
           <div>
@@ -92,7 +89,7 @@ const App = () => {
             <button type="submit">Decrypt</button>
             <FormResult />
           </Form>
-        </>
+        </div>
       )}
     </div>
   )
