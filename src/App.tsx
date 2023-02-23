@@ -1,43 +1,58 @@
-import "./styles.css";
-import { useMetamask } from "use-metamask";
-import { providers } from "ethers";
-import * as sigUtil from "@metamask/eth-sig-util";
-import * as ethUtil from "ethereumjs-util";
+import React, { useState } from "react"
 
-import { Form, FormInput, FormResult, FormSubmit } from "./Form";
-import { useState } from "react";
+import { useMetamask } from "use-metamask"
+import { providers } from "ethers"
+
+import * as sigUtil from "@metamask/eth-sig-util"
+import * as ethUtil from "ethereumjs-util"
+
+import "./styles.css"
+
+const context = React.createContext("")
+
+const FormResult = () => {
+  const result = React.useContext(context)
+  return <p>{result}</p>
+}
+
+type FormProps = { onSubmit: (text: string) => Promise<string> | string | void }
+
+const Form = ({ onSubmit, children }: React.PropsWithChildren<FormProps>) => {
+  const [result, setResult] = React.useState("")
+  const submit: React.FormEventHandler<any> = async (e) => {
+    e.preventDefault()
+    const res = await onSubmit(e.currentTarget.elements.message.value)
+    if (res) setResult(res)
+  }
+  return (
+    <context.Provider value={result}>
+      <form onSubmit={submit}>{children}</form>
+    </context.Provider>
+  )
+}
 
 const requestPublicKey = (web3: providers.Web3Provider, account: string) => {
-  return web3.send("eth_getEncryptionPublicKey", [account]);
-};
+  return web3.send("eth_getEncryptionPublicKey", [account])
+}
 
+// https://docs.metamask.io/guide/rpc-api.html#other-rpc-methods
+// https://github.com/MetaMask/eth-sig-util/blob/v4.0.0/src/encryption.ts#L40
 const encrypt = (publicKey: string, text: string) => {
-  const result = sigUtil.encrypt({
-    publicKey,
-    data: text,
-    // https://github.com/MetaMask/eth-sig-util/blob/v4.0.0/src/encryption.ts#L40
-    version: "x25519-xsalsa20-poly1305"
-  });
+  const result = sigUtil.encrypt({ publicKey, data: text, version: "x25519-xsalsa20-poly1305" })
+  return ethUtil.bufferToHex(Buffer.from(JSON.stringify(result), "utf8"))
+}
 
-  // https://docs.metamask.io/guide/rpc-api.html#other-rpc-methods
-  return ethUtil.bufferToHex(Buffer.from(JSON.stringify(result), "utf8"));
-};
+const decrypt = async (web3: providers.Web3Provider, account: string, text: string) => {
+  const result = await web3.send("eth_decrypt", [text, account])
+  return result
+}
 
-const decrypt = async (
-  web3: providers.Web3Provider,
-  account: string,
-  text: string
-) => {
-  const result = await web3.send("eth_decrypt", [text, account]);
-  return result;
-};
+const App = () => {
+  const { connect, metaState } = useMetamask()
+  const [publicKey, setPublicKey] = useState("")
 
-export default function App() {
-  const { connect, metaState } = useMetamask();
-  const [publicKey, setPublicKey] = useState("");
-
-  const web3 = metaState.web3;
-  const account = metaState.account[0];
+  const web3 = metaState.web3
+  const account = metaState.account[0]
 
   return (
     <div className="App">
@@ -55,18 +70,14 @@ export default function App() {
           <div>
             <p>Get encryption public key from Metamask or input your own.</p>
             <p>
-              <button
-                onClick={() => {
-                  requestPublicKey(web3, account).then(setPublicKey);
-                }}
-              >
+              <button onClick={() => requestPublicKey(web3, account).then(setPublicKey)}>
                 Get public key
               </button>
             </p>
             <p> or </p>
             <Form onSubmit={setPublicKey}>
-              <FormInput placeholder="encryption public key" />
-              <FormSubmit>Set public key</FormSubmit>
+              <input placeholder="message" name="message" />
+              <button type="submit">encryption public key</button>
             </Form>
             <p>{publicKey}</p>
           </div>
@@ -76,8 +87,8 @@ export default function App() {
           <p>The key is used to encrypt any message.</p>
 
           <Form onSubmit={(msg) => encrypt(publicKey, msg)}>
-            <FormInput placeholder="message" />
-            <FormSubmit disabled={!publicKey}>Encrypt</FormSubmit>
+            <input placeholder="message" name="message" />
+            <button disabled={!publicKey} type="submit">Encrypt</button>
             <FormResult />
           </Form>
           <br />
@@ -85,12 +96,13 @@ export default function App() {
           <br />
           <p>Metamask is used to decrypt an encrypted message</p>
           <Form onSubmit={(msg) => decrypt(web3, account, msg)}>
-            <FormInput placeholder="encrypted message" />
-            <FormSubmit>Decrypt</FormSubmit>
+            <input placeholder="message" name="encrypted message" />
+            <button type="submit">Decrypt</button>
             <FormResult />
           </Form>
         </>
       )}
     </div>
-  );
+  )
 }
+export default App
